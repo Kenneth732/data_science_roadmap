@@ -1,0 +1,370 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Science Reality Roadmap · Interactive Gantt</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #f5f7fb;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      padding: 2rem 1.5rem;
+      color: #1a1a2e;
+    }
+
+    .roadmap-container {
+      max-width: 1300px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 2rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
+      padding: 2rem 1.5rem;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+      letter-spacing: -0.5px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    h1 span {
+      background: #eef2ff;
+      color: #4338ca;
+      font-size: 0.9rem;
+      padding: 0.2rem 0.8rem;
+      border-radius: 30px;
+      font-weight: 500;
+    }
+
+    .subtitle {
+      color: #5b6873;
+      font-size: 0.95rem;
+      margin-bottom: 2rem;
+      border-left: 3px solid #6366f1;
+      padding-left: 1rem;
+    }
+
+    .timeline-header {
+      display: flex;
+      align-items: flex-end;
+      margin-bottom: 0.5rem;
+      font-size: 0.8rem;
+      color: #6b7280;
+      font-weight: 500;
+    }
+    .timeline-header .phase-label {
+      width: 220px;
+      flex-shrink: 0;
+      padding-left: 0.5rem;
+    }
+    .timeline-header .month-markers {
+      flex: 1;
+      display: flex;
+      position: relative;
+    }
+    .month-markers span {
+      position: absolute;
+      transform: translateX(-50%);
+      white-space: nowrap;
+    }
+
+    .chart-area {
+      position: relative;
+      margin-top: 1rem;
+      margin-left: 0;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 0.8rem;
+      min-height: 48px;
+      position: relative;
+    }
+
+    .phase-info {
+      width: 220px;
+      flex-shrink: 0;
+      font-weight: 500;
+      font-size: 0.85rem;
+      color: #1e293b;
+      padding-right: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .phase-num {
+      background: #e0e7ff;
+      color: #3730a3;
+      font-weight: 600;
+      border-radius: 6px;
+      padding: 0.1rem 0.4rem;
+      font-size: 0.7rem;
+      margin-right: 0.2rem;
+    }
+
+    .bar-track {
+      flex: 1;
+      position: relative;
+      height: 36px;
+      background: #f1f4f9;
+      border-radius: 20px;
+      overflow: visible;
+    }
+
+    .bar {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border-radius: 20px;
+      transition: all 0.2s ease;
+      cursor: default;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 0.7rem;
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 600;
+      white-space: nowrap;
+      box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);
+      z-index: 2;
+      min-width: fit-content;
+    }
+
+    .bar:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+      box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+      z-index: 10;
+    }
+
+    .bar.secondary {
+      background: linear-gradient(135deg, #14b8a6, #0d9488);
+      box-shadow: 0 4px 6px -1px rgba(20, 184, 166, 0.3);
+    }
+    .bar.tertiary {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.3);
+    }
+    .bar.special {
+      background: linear-gradient(135deg, #ec4899, #be185d);
+      box-shadow: 0 4px 6px -1px rgba(236, 72, 153, 0.3);
+    }
+
+    /* tooltip */
+    .tooltip {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 10px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e293b;
+      color: white;
+      padding: 0.7rem 1rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      white-space: normal;
+      width: 260px;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2);
+      z-index: 20;
+      pointer-events: none;
+      text-align: left;
+    }
+    .tooltip strong {
+      display: block;
+      font-size: 0.85rem;
+      margin-bottom: 0.3rem;
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+      padding-bottom: 0.3rem;
+    }
+    .tooltip .label {
+      color: #a5b4fc;
+      font-weight: 500;
+      margin-top: 0.4rem;
+      display: block;
+    }
+    .bar:hover .tooltip {
+      display: block;
+    }
+
+    .legend {
+      display: flex;
+      gap: 2rem;
+      margin-top: 2rem;
+      font-size: 0.8rem;
+      color: #4b5563;
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .legend-color {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+    }
+
+    @media (max-width: 700px) {
+      .phase-info {
+        width: 130px;
+        font-size: 0.7rem;
+      }
+      .bar {
+        font-size: 0.6rem;
+        padding-right: 0.3rem;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="roadmap-container">
+  <h1>
+    📋 Data Science Reality Roadmap
+    <span>2026</span>
+  </h1>
+  <div class="subtitle">
+    Production‑ready timeline · Hover bars for details · Realistic skill stacking
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-color" style="background:#6366f1;"></div> Core foundations</div>
+    <div class="legend-item"><div class="legend-color" style="background:#14b8a6;"></div> Data & Math</div>
+    <div class="legend-item"><div class="legend-color" style="background:#f59e0b;"></div> Production / MLOps</div>
+    <div class="legend-item"><div class="legend-color" style="background:#ec4899;"></div> Specialisation</div>
+  </div>
+
+  <div class="timeline-header">
+    <div class="phase-label">Phase</div>
+    <div class="month-markers" id="monthMarkers"></div>
+  </div>
+
+  <div class="chart-area" id="chartArea"></div>
+</div>
+
+<script>
+  (function() {
+    // ----- DATA DEFINITION (phases with start months, duration, details) -----
+    const phases = [
+      { id: 0, name: "Computer & Prog Foundations", start: 0, dur: 6, 
+        learn: "CPU/RAM, CLI, Git, APIs, HTTP, JSON", tools: "Bash, Git, VS Code", type: "core" },
+      { id: 1, name: "Programming Deep Dive", start: 6, dur: 8,
+        learn: "OOP, async, decorators, typing, testing", tools: "pytest, poetry, asyncio", type: "core" },
+      { id: 2, name: "Frontend Fundamentals (optional)", start: 12, dur: 4,
+        learn: "HTML, CSS, JS, React, Tailwind", tools: "Chart.js, D3", type: "core" },
+      { id: 3, name: "Backend Engineering", start: 14, dur: 6,
+        learn: "REST, JWT, caching, queues", tools: "FastAPI, Postgres, SQLAlchemy", type: "core" },
+      { id: 6, name: "Data Analysis", start: 20, dur: 6,
+        learn: "EDA, cleaning, feature engineering", tools: "pandas, polars, seaborn", type: "data" },
+      { id: 5, name: "Mathematics & Statistics", start: 20, dur: 12,
+        learn: "Linear algebra, calculus, hypothesis testing", tools: "NumPy, SciPy, statsmodels", type: "data" },
+      { id: 4, name: "Data Engineering", start: 26, dur: 8,
+        learn: "ETL, SQL mastery, data lakes, streaming", tools: "Airflow, Spark, Kafka", type: "data" },
+      { id: 7, name: "Machine Learning", start: 26, dur: 10,
+        learn: "Supervised/unsupervised, ensembles, NLP", tools: "scikit-learn, XGBoost, Hugging Face", type: "core" },
+      { id: 8, name: "Deep Learning", start: 36, dur: 10,
+        learn: "CNNs, Transformers, fine-tuning", tools: "PyTorch, LangChain, vLLM", type: "core" },
+      { id: 9, name: "MLOps & Production ML", start: 36, dur: 10,
+        learn: "CI/CD, drift detection, serving", tools: "Docker, K8s, MLflow, BentoML", type: "production" },
+      { id: 10, name: "Cloud Engineering", start: 46, dur: 8,
+        learn: "AWS, GCP, Azure ML services", tools: "SageMaker, Vertex AI, Lambda", type: "production" },
+      { id: 11, name: "DevOps & Infrastructure", start: 54, dur: 8,
+        learn: "Linux admin, networking, IaC", tools: "Terraform, Nginx, Ansible", type: "production" },
+      { id: 12, name: "Specialization (choose path)", start: 62, dur: 999,
+        learn: "MLE · Research · Data Eng · AI Apps", tools: "depends on path", type: "special" }
+    ];
+
+    // total display timeline: 0 to 72 months (6 years)
+    const TOTAL_MONTHS = 72;
+
+    // build month markers
+    const markersDiv = document.getElementById('monthMarkers');
+    const markerStep = 12; // yearly
+    for (let m = 0; m <= TOTAL_MONTHS; m += markerStep) {
+      const span = document.createElement('span');
+      span.style.left = (m / TOTAL_MONTHS * 100) + '%';
+      span.textContent = `Year ${m/12}`;
+      markersDiv.appendChild(span);
+    }
+
+    const chartArea = document.getElementById('chartArea');
+
+    // sort phases by start month for clean display, but we want to keep the original order slightly grouped
+    const sortedPhases = [...phases].sort((a,b) => a.start - b.start || a.id - b.id);
+
+    sortedPhases.forEach(phase => {
+      // skip phases that start after total display? show them anyway
+      const effectiveStart = Math.min(phase.start, TOTAL_MONTHS);
+      let effectiveDur = phase.dur;
+      if (phase.start + phase.dur > TOTAL_MONTHS) {
+        effectiveDur = TOTAL_MONTHS - phase.start;
+        if (effectiveDur < 0) effectiveDur = 0;
+      }
+      if (effectiveDur <= 0) return;
+
+      const leftPercent = (effectiveStart / TOTAL_MONTHS) * 100;
+      const widthPercent = (effectiveDur / TOTAL_MONTHS) * 100;
+
+      // row container
+      const row = document.createElement('div');
+      row.className = 'row';
+
+      // phase label
+      const infoDiv = document.createElement('div');
+      infoDiv.className = 'phase-info';
+      infoDiv.innerHTML = `<span class="phase-num">P${phase.id}</span> ${phase.name}`;
+      row.appendChild(infoDiv);
+
+      // bar track
+      const track = document.createElement('div');
+      track.className = 'bar-track';
+
+      const bar = document.createElement('div');
+      bar.className = 'bar';
+      // style based on type
+      if (phase.type === 'data') bar.classList.add('secondary');
+      else if (phase.type === 'production') bar.classList.add('tertiary');
+      else if (phase.type === 'special') bar.classList.add('special');
+
+      bar.style.left = leftPercent + '%';
+      bar.style.width = Math.max(widthPercent, 2) + '%'; // ensure visible
+
+      // duration label inside bar
+      const durText = phase.dur === 999 ? 'ongoing' : `${phase.dur} months`;
+      bar.textContent = `${phase.dur === 999 ? '∞' : phase.dur}mo`;
+
+      // tooltip
+      const tooltip = document.createElement('div');
+      tooltip.className = 'tooltip';
+      tooltip.innerHTML = `
+        <strong>Phase ${phase.id}: ${phase.name}</strong>
+        <span>⏱️ ${phase.start}-${phase.start+phase.dur} months (${durText})</span>
+        <span class="label">📘 Learn:</span> ${phase.learn}
+        <span class="label">🛠 Tools:</span> ${phase.tools}
+      `;
+      bar.appendChild(tooltip);
+
+      track.appendChild(bar);
+      row.appendChild(track);
+      chartArea.appendChild(row);
+    });
+
+    // add a "now" marker line (optional) - static at month 24? Not needed.
+  })();
+</script>
+</body>
+</html>
